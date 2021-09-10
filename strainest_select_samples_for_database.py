@@ -48,7 +48,8 @@ def extract_mlst():
             else:
                 mlst_map[row[1]] = [row[0]]
     return mlst_map
-mlst_map = extract_mlst()
+
+# mlst_map = extract_mlst()
 
 def extract_depth():
     print "Extract percentage of bases_above_5 for each samples from %s and generating Sample to GATK Depth map\n" % args.depth_report
@@ -59,7 +60,7 @@ def extract_depth():
         for row in csv_reader:
             depth_map[row[0]] = row[7]
     return depth_map
-depth_map = extract_depth()
+# depth_map = extract_depth()
 
 def select_ST_based_representative_sample():
     print "Extracting Representative Sample for each ST based on the Max Read Depth and writing it to - Selected_ST_representative_samples.txt\n"
@@ -84,7 +85,8 @@ def select_ST_based_representative_sample():
             representative_sample.append(str(rep) + "_R1_001.fastq.gz")
     fp.close()
     return representative_sample
-representative_sample = select_ST_based_representative_sample()
+
+# representative_sample = select_ST_based_representative_sample()
 
 # Print SNP allele Matrix of Representative sample to Selected_ST_representative_matrix.csv
 def extract_representative_samples():
@@ -96,11 +98,14 @@ def extract_representative_samples():
     del df1
     gc.collect()
 
-print "Time taken to read SNP matrix and extract Representative Samples: %s" % (timeit.timeit(extract_representative_samples, number=1))
+# print "Time taken to read SNP matrix and extract Representative Samples: %s" % (timeit.timeit(extract_representative_samples, number=1))
 
 def extract_matrix_positions():
     #Extract Position and Reference allele from SNP matrix
     print "Extracting Position from SNP matrix - %s to POS\n" % args.matrix
+    global df
+    df = pd.read_csv("%s" % args.matrix, sep=',', header=0)
+    global pos
     pos = []
     for i in range(len(df)) :
       stringarray = (df.iloc[i, 0]).split(' ')
@@ -112,7 +117,8 @@ def extract_matrix_positions():
         fileObj.write(item + '\n')
     fileObj.close()
     return pos
-pos = extract_matrix_positions()
+
+# pos = extract_matrix_positions()
 
 def extract_reference_allele():
     print "Extracting Reference Allele from Reference Fasta file - %s to REF\n" % args.reference
@@ -129,15 +135,15 @@ def extract_reference_allele():
         fileObj.write(ref_allele + '\n')
     fileObj.close()
 
-extract_reference_allele()
+# extract_reference_allele()
 
 
-# Generate StrainEst Database matrix
-print "Generate Strainest Database matrix by pasting files(POS, REF, Selected_ST_representative_matrix.csv) to Strainest_Selected_ST_representative_db.csv\n"
-os.system("paste -d ',' POS REF Selected_ST_representative_matrix.csv > Strainest_Selected_ST_representative_db.csv")
-
-print "Adding Row annotation column to representative_sample array so that it can also be subset to Selected_ST_representative_code_matrix.csv\n"
-representative_sample.insert(0, "Type of SNP at POS > ALT functional=PHAGE_REPEAT_MASK locus_tag=locus_id strand=strand; ALT|Effect|Impact|GeneID|Nrchange|Aachange|Nrgenepos|AAgenepos|gene_symbol|product")
+# # Generate StrainEst Database matrix
+# print "Generate Strainest Database matrix by pasting files(POS, REF, Selected_ST_representative_matrix.csv) to Strainest_Selected_ST_representative_db.csv\n"
+# os.system("paste -d ',' POS REF Selected_ST_representative_matrix.csv > Strainest_Selected_ST_representative_db.csv")
+#
+# print "Adding Row annotation column to representative_sample array so that it can also be subset to Selected_ST_representative_code_matrix.csv\n"
+# representative_sample.insert(0, "Type of SNP at POS > ALT functional=PHAGE_REPEAT_MASK locus_tag=locus_id strand=strand; ALT|Effect|Impact|GeneID|Nrchange|Aachange|Nrgenepos|AAgenepos|gene_symbol|product")
 
 
 def extract_representative_samples_code_matrix():
@@ -149,7 +155,7 @@ def extract_representative_samples_code_matrix():
     del df1
     gc.collect()
 
-extract_representative_samples_code_matrix()
+# extract_representative_samples_code_matrix()
 #print "Time taken to read SNP code matrix and extract Representative Samples: %s\n" % (timeit.timeit(extract_representative_samples_code_matrix, number=1))
 
 
@@ -247,7 +253,6 @@ def extract_core_positions_from_SNP_code_matrix():
 #extract_core_positions_from_SNP_code_matrix()
 
 
-
 def extract_core_and_unmapped_positions_from_SNP_code_matrix():
     print "Reading SNP code matrix and extracting core/unmapped variants..."
     position_label = OrderedDict()
@@ -290,7 +295,7 @@ def extract_core_and_unmapped_positions_from_SNP_code_matrix():
     fp.close()
     check_Selected_ST_representative_code_matrix_code("Selected_ST_representative_code_matrix_core_unmapped_db.csv")
 
-extract_core_and_unmapped_positions_from_SNP_code_matrix()
+#extract_core_and_unmapped_positions_from_SNP_code_matrix()
 
 def extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes():
     print "Extract Positions for MLST genes..."
@@ -303,8 +308,8 @@ def extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes():
 
     print "Reading SNP code matrix and extracting core/unmapped variants..."
     position_label = OrderedDict()
-    non_core_codes = ['2', '3', '4', '-2', '-3', '-4']
-    core_unmapped_codes = ['0', '1', '-1']
+    non_core_codes = ['2', '4', '-2', '-3', '-4']
+    core_unmapped_codes = ['0', '1', '-1', '3']
     core_unmapped_positions = []
     with open("Selected_ST_representative_code_matrix.csv", 'rU') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -317,17 +322,11 @@ def extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes():
     for key in position_label:
         if set(core_unmapped_codes) & set(position_label[key]):
             if set(non_core_codes) & set(position_label[key]):
-                # print key
-                # print position_label[key]
                 continue
             else:
                 count += 1
                 if str(key.split(' ')[3]) in mlst_pos:
-                    print key
                     core_unmapped_positions.append(key.split(' ')[3])
-                # print key
-                # print position_label[key]
-    #print core_positions
     print "Reading Strainest_Selected_ST_representative_db matrix and extracting core/unmapped positions to Strainest_Selected_ST_representative_core_unmapped_db.csv..."
     global df
     df = pd.read_csv("Strainest_Selected_ST_representative_db.csv", sep=',', header=0)
@@ -336,6 +335,178 @@ def extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes():
     del df1
     gc.collect()
 
-#extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes()
+    fp = open("Selected_ST_representative_code_matrix_core_unmapped_db.csv", 'w+')
+    with open("Selected_ST_representative_code_matrix.csv", 'rU') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for row in csv_reader:
+            # print row
+            position = (row[0]).split(' ')[3]
+            if position in core_unmapped_positions or (row[0]).startswith('Type'):
+                s = '\t'.join(row)
+                fp.write(str(s) + '\n')
+    fp.close()
+    check_Selected_ST_representative_code_matrix_code("Selected_ST_representative_code_matrix_core_unmapped_db.csv")
+
+
+# extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes()
 
 #check_Selected_ST_representative_code_matrix_code()
+
+#########################################################
+
+def QC_passed_all_genomes_core():
+    pos = extract_matrix_positions()
+    extract_reference_allele()
+
+    global df
+    df = pd.read_csv("%s" % args.matrix, sep=',', header=0)
+    global representative_sample
+    representative_sample = list(df.columns[1:])
+
+    df1 = df[representative_sample]
+    df1.to_csv('Selected_ST_representative_matrix.csv', index=False)
+    del df1
+    gc.collect()
+
+    print "Generate Strainest Database matrix by pasting files(POS, REF, Selected_ST_representative_matrix.csv) to Strainest_Selected_ST_representative_db.csv\n"
+    os.system("paste -d ',' POS REF Selected_ST_representative_matrix.csv > Strainest_Selected_ST_representative_db.csv")
+
+    print "Adding Row annotation column to representative_sample array so that it can also be subset to Selected_ST_representative_code_matrix.csv\n"
+    representative_sample.insert(0, "Type of SNP at POS > ALT functional=PHAGE_REPEAT_MASK locus_tag=locus_id strand=strand; ALT|Effect|Impact|GeneID|Nrchange|Aachange|Nrgenepos|AAgenepos|gene_symbol|product")
+
+    extract_representative_samples_code_matrix()
+
+    extract_core_positions_from_SNP_code_matrix()
+
+
+def QC_passed_all_genomes_core_and_unmapped():
+    pos = extract_matrix_positions()
+    extract_reference_allele()
+
+    global df
+    df = pd.read_csv("%s" % args.matrix, sep=',', header=0)
+    global representative_sample
+    representative_sample = list(df.columns[1:])
+
+    df1 = df[representative_sample]
+    df1.to_csv('Selected_ST_representative_matrix.csv', index=False)
+    del df1
+    gc.collect()
+
+    print "Generate Strainest Database matrix by pasting files(POS, REF, Selected_ST_representative_matrix.csv) to Strainest_Selected_ST_representative_db.csv\n"
+    os.system("paste -d ',' POS REF Selected_ST_representative_matrix.csv > Strainest_Selected_ST_representative_db.csv")
+
+    print "Adding Row annotation column to representative_sample array so that it can also be subset to Selected_ST_representative_code_matrix.csv\n"
+    representative_sample.insert(0, "Type of SNP at POS > ALT functional=PHAGE_REPEAT_MASK locus_tag=locus_id strand=strand; ALT|Effect|Impact|GeneID|Nrchange|Aachange|Nrgenepos|AAgenepos|gene_symbol|product")
+
+    extract_representative_samples_code_matrix()
+
+    extract_core_and_unmapped_positions_from_SNP_code_matrix()
+
+
+def QC_passed_all_genomes_core_exclude_test_samples():
+    test_samples = []
+    with open("test_samples.txt") as fp:
+        for line in fp:
+            line = line.strip()
+            test_samples.append(line)
+    fp.close()
+
+
+    global df
+    df = pd.read_csv("%s" % args.matrix, sep=',', header=0)
+    global representative_sample
+    representative_sample = list(df.columns[0:])
+    print len(representative_sample)
+    for i in representative_sample:
+        if i in test_samples:
+            representative_sample.remove(i)
+    print len(representative_sample)
+    df1 = df[representative_sample]
+    df1.to_csv('Strainest_Selected_ST_representative_core_db_exclude_test_samples.csv', index=False)
+    del df1
+    gc.collect()
+
+def QC_passed_all_genomes_core_and_unmapped_exclude_test_samples():
+    test_samples = []
+    with open("test_samples.txt") as fp:
+        for line in fp:
+            line = line.strip()
+            test_samples.append(line)
+    fp.close()
+
+
+    global df
+    df = pd.read_csv("%s" % args.matrix, sep=',', header=0)
+    global representative_sample
+    representative_sample = list(df.columns[0:])
+    print len(representative_sample)
+    for i in representative_sample:
+        if i in test_samples:
+            representative_sample.remove(i)
+    print len(representative_sample)
+    df1 = df[representative_sample]
+    df1.to_csv('Strainest_Selected_ST_representative_core_db_exclude_test_samples.csv', index=False)
+    del df1
+    gc.collect()
+
+def subset_strainest_db():
+    print "Reading SNP code matrix and extracting core variants.\n"
+
+    fp = open("Strainest_Selected_ST_representative_core_db_exclude_only_reference.csv", 'w+')
+    with open("%s" % args.matrix, 'rU') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for row in csv_reader:
+            fp.write(','.join(row) + '\n')
+            break
+
+        next(csv_reader, None)
+        for row in csv_reader:
+            result = False
+            if len(row) > 0:
+                result = row.count(row[1]) == len(row[1:])
+            if result:
+                print row[0]
+            else:
+                fp.write(','.join(row) + '\n')
+    csv_file.close()
+
+    fp.close()
+
+#########################################################
+#mlst_map = extract_mlst()
+
+#depth_map = extract_depth()
+
+#representative_sample = select_ST_based_representative_sample()
+
+#print "Time taken to read SNP matrix and extract Representative Samples: %s" % (timeit.timeit(extract_representative_samples, number=1))
+
+# pos = extract_matrix_positions()
+
+#extract_reference_allele()
+
+# Generate StrainEst Database matrix
+# print "Generate Strainest Database matrix by pasting files(POS, REF, Selected_ST_representative_matrix.csv) to Strainest_Selected_ST_representative_db.csv\n"
+# os.system("paste -d ',' POS REF Selected_ST_representative_matrix.csv > Strainest_Selected_ST_representative_db.csv")
+#
+# print "Adding Row annotation column to representative_sample array so that it can also be subset to Selected_ST_representative_code_matrix.csv\n"
+# representative_sample.insert(0, "Type of SNP at POS > ALT functional=PHAGE_REPEAT_MASK locus_tag=locus_id strand=strand; ALT|Effect|Impact|GeneID|Nrchange|Aachange|Nrgenepos|AAgenepos|gene_symbol|product")
+#
+# extract_representative_samples_code_matrix()
+#
+# extract_core_positions_from_SNP_code_matrix()
+#
+# extract_core_and_unmapped_positions_from_SNP_code_matrix()
+#
+# extract_core_and_unmapped_positions_from_SNP_code_matrix_for_MLST_genes()
+
+#QC_passed_all_genomes_core()
+
+#QC_passed_all_genomes_core_and_unmapped()
+
+#QC_passed_all_genomes_core_exclude_test_samples()
+
+QC_passed_all_genomes_core_and_unmapped_exclude_test_samples()
+
+#subset_strainest_db()
